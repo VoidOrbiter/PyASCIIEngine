@@ -1,8 +1,11 @@
 from PyQt6.QtWidgets import (
-    QDockWidget, QTreeView, QWidget,
-    QVBoxLayout, QLabel
+    QDockWidget, QScrollArea, QWidget,
+    QGridLayout, QVBoxLayout, QTreeView
 )
-from PyQt6.QtCore import Qt, QDir
+from PyQt6.QtCore import pyqtSignal
+from src.pyascii_engine.utils.project_card import ProjectCard
+import os
+
 
 # ------ DO NOT REMOVE THIS TRY ------
 try:
@@ -12,37 +15,28 @@ except ImportError:
                                              # sanity shall anyone else mess with this code please just keep this -VoidOrbiter
 
 class LeftSidebar(QDockWidget):
-    def __init__(self, project_root: str, parent=None):
+    project_selected = pyqtSignal(str)
+
+    def __init__(self, projects, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Project Explorer")
-        self.setFixedWidth(250)
 
-        # ------ CONTAINER FOR THE LAYOUT ------
-        container   = QWidget()
-        layout      = QVBoxLayout()
-        container.setLayout(layout)
-
-        layout.addWidget(QLabel("Project Files:"))
+        projects = projects or []
 
         self.model = QFileSystemModel()
-        self.model.setRootPath(project_root)
-        self.model.setFilter(QDir.Filter.AllDirs | QDir.Filter.Files | QDir.Filter.NoDotAndDotDot)
+        self.model.setRootPath("")
 
         self.tree = QTreeView()
         self.tree.setModel(self.model)
-        self.tree.setRootIndex(self.model.index(project_root))
-        self.tree.setHeaderHidden(True)
-        self.tree.setSortingEnabled(True)
 
-        self.tree.setDragEnabled(True)
-        self.tree.setAcceptDrops(True)
-        self.tree.setDragDropMode(QTreeView.DragDropMode.DragOnly)
+        projects_root = os.path.join(os.path.dirname(__file__), "../projects")
+        self.tree.setRootIndex(self.model.index(projects_root))
 
-        layout.addWidget(self.tree)
-        self.setWidget(container)
+        main_layout = QVBoxLayout()
+        main_layout.addWidget(self.tree)
 
-        self.tree.clicked.connect(self.on_item_clicked)
-        self.tree.doubleClicked.connect(self.on_item_double_clicked)
+        main_widget = QWidget()
+        main_widget.setLayout(main_layout)
+        self.setWidget(main_widget)
 
     def on_item_clicked(self, index):
         file_path = self.model.filePath(index)
@@ -51,3 +45,12 @@ class LeftSidebar(QDockWidget):
     def on_item_double_clicked(self, index):
         file_path = self.model.filePath(index)
         print(f"Double clicked: {file_path}")
+
+    def set_project_path(self, project_path):
+        self.project_path = project_path
+        self.refresh_tree()
+
+    def refresh_tree(self):
+        if hasattr(self, 'model') and hasattr(self, 'tree') and self.project_path:
+            self.model.setRootPath(self.project_path)
+            self.tree.setRootIndex(self.model.index(self.project_path))

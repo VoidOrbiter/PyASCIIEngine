@@ -79,3 +79,6 @@ class NewProjectDialog(QDialog):
 
     def get_project_path(self):
         return self.folder_edit.text()
+
+    def get_full_path(self):
+        return os.path.join(self.folder_edit.text().strip(), self.name_edit.text().strip())

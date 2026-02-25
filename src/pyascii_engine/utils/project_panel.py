@@ -3,9 +3,11 @@ from PyQt6.QtWidgets import (
     QGridLayout, QLabel, QSizePolicy
 )
 from PyQt6.QtGui import QPixmap
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, pyqtSignal
+from src.pyascii_engine.utils.project_card import ProjectCard
 
 class ProjectPanel(QWidget):
+    project_selected = pyqtSignal(str)
     def __init__(self, projects):
         super().__init__()
 
@@ -29,29 +31,8 @@ class ProjectPanel(QWidget):
         col = 0
 
         for proj in projects:
-            card = QWidget()
-            card_layout = QVBoxLayout(card)
-
-            pixmap = QPixmap(proj.get("image", ""))
-            img_label = QLabel()
-            if not pixmap.isNull():
-                img_label.setPixmap(pixmap.scaled(100, 100))
-            else:
-                img_label.setText("No Image")
-                img_label.setFixedSize(100, 100)
-                img_label.setStyleSheet("background-color: #444; color: #fff;")
-                img_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-            name_label = QLabel(proj["name"])
-            name_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-            card_layout.addWidget(img_label)
-            card_layout.addWidget(name_label)
-            card.setMaximumWidth(120)
-            card.setMaximumHeight(150)
-            card.setObjectName("card")
-            name_label.setObjectName("projectName")
-
+            card = ProjectCard(proj)
+            card.clicked.connect(self.project_selected.emit)
             self.grid_layout.addWidget(card, row, col)
 
             col += 1

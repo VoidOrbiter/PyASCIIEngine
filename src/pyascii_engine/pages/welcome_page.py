@@ -8,10 +8,10 @@ from src.pyascii_engine.utils.project_dialog import NewProjectDialog
 from src.pyascii_engine.utils.project_panel import ProjectPanel
 
 class WelcomePage(QWidget):
-    def __init__(self):
+    def __init__(self, main_window):
         super().__init__()
         self.setWindowTitle("Welcome To PyASCIIEngine")
-
+        self.main_window = main_window
         # ------ Layouts ------
         self.main_layout = QVBoxLayout()
         self.main_panel  = QHBoxLayout()
@@ -54,13 +54,23 @@ class WelcomePage(QWidget):
         self.setLayout(self.main_layout)
 
         self.current_project_path = None
+        self.projects_panel.project_selected.connect(self.load_project)
 
     def create_new_project(self):
         dialog = NewProjectDialog()
         if dialog.exec():
-            project_name = dialog.get_project_name().strip()
+            project_path = dialog.get_full_path()
+            project_name = dialog.get_project_name()
+
             if not project_name:
                 return
+
+            if not os.path.exists(project_path):
+                QMessageBox.warning(self, "Error", "Project folder not found.")
+                return
+
+        if self.main_window and hasattr(self.main_window, "left_sidebar"):
+            self.main_window.left_sidebar.set_project_path(os.path.dirname(project_path))
 
             engine_root = os.path.dirname(os.path.dirname(__file__))
             projects_root = os.path.join(engine_root, "projects")
@@ -74,7 +84,6 @@ class WelcomePage(QWidget):
 
             self.current_project_path = project_path
 
-            # update projects.json
             projects_file = os.path.join(projects_root, "projects.json")
             if not os.path.exists(projects_file):
                 with open(projects_file, "w", encoding="utf-8") as f:
@@ -105,9 +114,19 @@ class WelcomePage(QWidget):
             QMessageBox.information(self, "Success", f"Project '{project_name}' created at {project_path}")
 
             self.projects_panel.populate_grid(projects)
+            self.main_window.left_sidebar.populate_grid(projects)
+
+            self.current_project_path = project_path
+            self.load_project(self.current_project_path)
+
 
     def get_project_path(self):
         return self.current_project_path
+
+    def load_project(self, path):
+        self.current_project_path = path
+        if self.main_window:
+            self.main_window.load_project(path)
 
 if __name__ == "__main__":
     from PyQt6.QtWidgets import QApplication

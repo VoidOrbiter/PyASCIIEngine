@@ -1,21 +1,23 @@
 from PyQt6.QtWidgets import (
     QDockWidget, QVBoxLayout, QLabel,
     QListWidgetItem,
-    QPushButton, QWidget, QInputDialog
+    QPushButton, QWidget
 )
 from PyQt6.QtCore import Qt
-import uuid
+from src.pyascii_engine.utils.new_object_dialog import NewObjectDialog
 from src.pyascii_engine.utils.draggable_list_widget import DraggableListWidget
+
 
 class RightSidebar(QDockWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
+
         self.setWindowTitle("Objects")
         self.setFixedWidth(200)
 
         # ------ CONTAINER ------
-        container   = QWidget()
-        layout      = QVBoxLayout()
+        container = QWidget()
+        layout = QVBoxLayout()
         container.setLayout(layout)
 
         # ------ LIST OF THE OBJECTS ------
@@ -30,32 +32,13 @@ class RightSidebar(QDockWidget):
 
         self.setWidget(container)
 
+    def set_project_path(self, path):
+        self.project_path = path
+
     def add_new_object(self):
-        name, ok = QInputDialog.getText(self, "Object name", "Enter Object name:")
-        if not ok or not name:
-            return
-
-        symbol, ok = QInputDialog.getText(self, "Object Symbol", "Enter symbol (1 char):")
-        if not ok or not symbol:
-            return
-
-        description, ok = QInputDialog.getText(self, "Description", "Enter Description:")
-        if not ok:
-            description = ""
-
-        instance_type, ok = QInputDialog.getText(self, "Instance Type", "Enter Instance Type:")
-        if not ok or not instance_type:
-            instance_type = "default"
-
-        obj = {
-            "id": str(uuid.uuid4()),
-            "name": name,
-            "symbol": symbol,
-            "description": description,
-            "instance_type": instance_type
-        }
-
-        self.add_object(obj)
+        dialog = NewObjectDialog(default_folder=self.project_path)
+        dialog.object_created.connect(self.add_object)
+        dialog.exec()
 
     def add_object(self, obj):
         item = QListWidgetItem(f"{obj['name']} ({obj['id'][:8]})")
